@@ -4,17 +4,88 @@
 
 [Scala](http://www.scala-lang.org/)是由`Martin Ordersky`设计的一门混合「面向对象」和「函数式」，并具备完备的「泛型编程」能力，支持多种范式的程序设计语言。
 
-`Scala`的设计吸收了众多程序设计语言优秀的思想，取其精华，去其糟粕。`Scala`博大精深，并拥有与众不同的气质，及其鲜明的哲学思维体系。
-
-## 选择Scala
-
 `Scala`取名为「可扩展的语言」，因为它拥有良好的弹性。它使用不变的语言内核，构建万千变化的世界。同时，`Scala`也是设计「`DSL`(领域描述语言)」的利器，让编程充满轻松，愉快的气氛，并富有成就感。
 
 `Scala`拥有强大的类型系统，具有丰富的表达能力，语法简洁，优雅，灵活。它应用广泛，从编写简单的脚本，到构建大型的企业级系统。
 
 `Scala`运行于`JVM`之上，并与现有的`JVM`生态系统无缝链接，而无需定义额外的胶水代码。它兼容既有`Java`的类库，让成千上万的程序可以继续工作，并能够得以复用。
 
-接下来，通过几个简单的例子，阐述`Scala`所具有的一些特点，并以此阐述选择`Scala`的动机。
+## Hello World
+
+这是一个`Scala`的`Hello World`程序。
+
+```scala
+object World extends App {
+  println("hello, world!")
+}
+```
+
+执行如下命令，可以编译、执行该程序。
+
+```bash
+$ scala World.scala
+hello, world!
+```
+
+恭喜你，你的第一个`Scala`程序终于面世了。
+
+### 混入App特质
+
+`Scala`摒弃了`static`的语义，使用`object`定义「单键对象」。通过定义单键对象`object World`，并混入`App`特质，从根本上消除了`main`函数定义这一固定模式的重复实现。
+
+其中，`App`拥有`main`函数的所有特性，包括名为`args`的程序选项。
+
+### 不使用App特质
+
+如果不使用`App`特质，上述代码等价于：
+
+```scala
+object World {
+  def main(args: Array[String]) {
+    println("hello, world!")
+  }
+}
+```
+
+`Scala`并没有像`Java`一样，针对「基本类型」(例如`int`)，「数组类型」(例如`int[]`)定义特殊的语法，它将一切都看成对象。
+
+`Array[String]`是一个对「原生数组」进行包装，「类型参数」为`String`的普通类。需要注意的是，「类型参数」使用中括号，而不是使用尖括号。
+
+值得庆幸的是，`Scala`编译器会尽最大可能将其还原为原生的数组类型，以便获得最佳的执行效率。
+
+### 函数返回值类型
+
+`Scala`社区习惯于将「变量」，「函数返回值」的类型定义放在后面，以便做到风格的一致性，例如`args: Array[String]`。
+
+为了简便，上例将`main`实现为一个「过程」，它忽略了`main`函数返回值的类型定义，其实现等价于：
+
+```scala
+def main(args: Array[String]): Unit = {
+  println("hello, world!")
+}
+```
+
+其中，`Unit`类似于`void`，`()`是它拥有的唯一的实例。
+
+### Predef
+
+`println("hello, world!")`等价于`Console.println("hello, world!")`，因为`println`定义于`Predef`对象之中：
+
+```scala
+package scala
+
+object Predef {
+  def println(x: Any) = Console.println(x)
+}
+```
+
+其中，`Predef`对象被`Scala`默认导入，并对所有`Scala`程序可见。
+
+## 选择Scala
+
+`Scala`的设计吸收了众多程序设计语言优秀的思想，取其精华，去其糟粕。`Scala`博大精深，并拥有与众不同的气质，及其鲜明的哲学思维体系。
+
+接下来，通过几个简单的例子，阐述`Scala`所具有的一些特点，并阐述选择`Scala`的动机。
 
 ### Scala是自由的
 
@@ -191,24 +262,50 @@ exists(word, c -> Character.isDigit(c));
 exists(word, Character::isDigit);
 ```
 
-但是，即使使用`Java8`，设计依然还是美中不足。因为`exists`被设计为一个实用方法，如果将`exists`成为`String`的一个方法，用户代码将更加具有面向对象的风格了。
+但是，即使使用`Java8`，设计依然还是美中不足。其一，`exists`拥有两个参数，如果能够做到如下的代码块那就太神奇了。
+
+```java
+// 假设可以定义代码块
+exists(word) { Character::isDigit };
+```
+
+其二，如果将`exists`成为`String`的一个方法，用户代码将更加具有`OO`的风格了。
 
 ```java
 // 假设String拥有exists方法
 word.exists(Character::isDigit);
 ```
 
-可惜的是，`Java`并没有这样的能力。
+可惜的是，`Java`并没有上述的能力。
 
 ##### 使用Scala
 
-而使用`Scala`，则可以使用更为抽象的语义来表达。
+使用`Scala`，可以复用`Java`中既有的结构。按照`Scala`惯例，对`Java`实现的`StringUtil.exists`可以做一个简单的包装。
 
 ```scala
-word.exists(_.isUpperCase)
+def exists(s: String)(p: Char => Boolean): Boolean =
+  return StringUtil.exists(s, new CharacterSpec {
+    override def satisfy(c: Char): Boolean = p(c)
+  })
 ```
 
-事实上，`java.lang.String`类中并不存在`exists`方法，但通过`Scala`「隐式转换」的神奇魔法，从而得到了一个功能增强的字符串类。
+相比`Java`的实现，`Scala`可以借助「柯里化」的机制，进一步改善代码的表达力。
+
+```scala
+exists(word) { _.isUpper }
+```
+
+事实上，`Scala`运用「隐式转换」的神奇魔法，可以将`String`的功能增强为`StringOps`，使其直接能够调用`exists`方法。
+
+```scala
+word.exists(_.isUpper)
+```
+
+如果你偏爱大括号，也可以写成这样：
+
+```scala
+word.exists { _.isUpper }
+```
 
 ### Scala是简洁的
 
@@ -326,10 +423,6 @@ object Main extends App {
 }
 ```
 
-`Scala`摒弃了`static`的语义，使用`object`定义单键对象，体现了`Scala`纯正的`OO`血统。诸如静态工厂方法，工具类等实现模式，是单键对象最佳的使用场景。
-
-`App`是一个特殊的「特质」，单键对象`Main`通过混入特质`App`，从根本上消除了`main`函数这一固定模式的重复实现，但自动地拥有`main`函数的所有特性，包括自动拥有`args: Array[String]`的程序选项。
-
 ##### `for`推导式
 
 ```scala
@@ -401,30 +494,92 @@ object Main extends App {
 
 `Scala`具有高度可扩展性的架构，借助于`trait`，抽象类型和泛型，`Self Type`，隐式转换等机制，使得它具备强大的灵活性。
 
-例如，`Scala`在没有改变语言内核和基本特性的前提下，通过扩展类库便支持了`actor`的并发编程模式。
+以`using`的设计为例，讲解`Scala`对于扩展性的支持，及其设计内部`DSL`的技术，加深对`Scala`的理解。
 
-```scala
-val service = actor {
-  loop {
-    receive {
-   case Add(x, y) => reply(x + y)
-   case Sub(x, y) => reply(x - y)
- }
-  }
-}
+##### 形式化
 
-service ! Add(2, 3)
+对于资源管理，可以简化为如下的数学模型：给定一个资源`R`，并将资源传递给用户空间，并回调算法`f: R => T`，当过程结束时资源自动释放，其算法可形式化地描述为：
+
+```
+Input: Given resource: R
+Output：T
+Algorithm：Call back to user namespace: f: R => T, and make sure resource be closed on done.
 ```
 
-其中，`actor, loop, receive, !`等都不是语言的关键字。归功于其良好的可扩展性，`Scala`已然成为设计`DSL`的利器。
+因此，`using`常常被称为「借贷模式」，是保证资源自动回收的重要机制。
+
+##### using实现
+
+```scala
+import scala.language.reflectiveCalls
+
+object using {
+  def apply[R <: { def close(): Unit }, T](resource: => R)(f: R => T): T = {
+    var source: Option[R] = None
+    try {
+      source = Some(resource)
+      f(source.get)
+    } finally {
+      for (s <- source)
+        s.close
+    }
+  }
+}
+```
+
+##### 鸭子编程
+
+`R <: { def close(): Unit }`表明`R`类型必须是具有`def close(): Unit`方法的子类型，这是`Scala`支持「鸭子编程」的一种重要技术。
+
+例如，`File`满足`R`类型的特征，因为它拥有`close`方法。
+
+##### 惰性求值
+
+`resource: => R`是按照`by-name`传递，在实参传递形参过程中，并未对实参进行立即求值，而将求值推延至`resource: => R`的调用点。
+
+例如，`using(Source.fromFile(source))`并没有马上发生调用`fromFile`方法并传递给形参，而将求值推延至`source = Some(resource)`语句，即调用`Some.apply`方法时才展开计算。
+
+##### 控制抽象
+
+使得`using`形如内置于语言的控制结构，其行为类似于`if, while`一样。
+
+```scala
+def read: String = using(fromFile(source)) { file =>
+  file.getLines.mkString(lineSeparator) 
+}
+```
+
+##### for推导式
+
+在`finally`关闭资源时，使用`for`推导式过滤掉`None`。也就是说，如下三种形式是等价的。
+
+- 过滤掉`None`，并自动提取`Option`中的元素
+
+```scala
+for (s <- source)
+  s.close
+```
+
+- 使用`if`，但需要从`Some`中手动`get`
+
+```scala
+if (source != None)
+  source.get.close
+```
 
 ## Scala的明天
 
-软件设计的目的就是为了控制复杂性，让软件应对未来变化具有更好的弹性。`Scala`强大而自由，当程序员设计一个应用和类库时，具有很大的自由空间。但过度的灵活性，往往诱惑他人掉进复杂性的深渊而不能自拔。
+软件设计的目的就是为了控制复杂性，让软件应对未来变化具有更好的弹性。`Scala`强大而自由，当程序员设计一个应用和类库时，具有很大的自由空间。
+
+但是，`Scala`过度的灵活性，往往会诱惑他人掉进复杂性的深渊而不能自拔。它犹如具有「魔戒」的力量，一股强大、而致命的力量。
 
 > Complexity is like a bug light for smart people. We can't resist it, even though we know it's bad for us. -- Alex Payne.
 
-我们应该理智地控制`Scala`的威力，抵制复杂性的诱惑，尽最大的可能让设计保持简单。`Scala`的明天会更简单，更加漂亮，对此我充满信心。
+因此，应该理智地抵制复杂性的诱惑，才能控制和发挥`Scala`的真正威力。使用`Scala`不是为了炫技，而应该尽最大的可能让设计保持简单。
+
+`Martin Ordersky`也在`2016`年元旦时发文，号召社区有志之士在未来的时间里尽最大可能地降低`Scala`的复杂度。
+
+我坚信，`Scala`的明天会更简单，更加漂亮。
 
 
 
