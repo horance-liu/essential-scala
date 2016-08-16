@@ -22,17 +22,17 @@
 
 ## Scala的基因
 
-`Scala`首先偏向`Java`社区的使用习惯，包括表达式，代码块，还有包和引用的等语法习性。而对于`Java`用户唯一提出挑战的就是「类型声明」被放在后面了；但是，当习惯了`Scala`代码风格后，你会发现后置类型修饰具有很多优势。
+`Scala`首先偏向`Java`社区的使用习惯，包括表达式，代码块，还有包和引用的等语法习性。而对于`Java`用户唯一提出挑战的就是「类型修饰」被放在变量后面了；但是，当习惯了`Scala`代码风格后，你会发现「后置类型修饰」具有很多优势。
 
-`Scala`也借鉴了`Smalltalk`的对象模型，修正了`Java`对象模型存在的诸多不足。例如，在没有损失性能的前提下，将`AnyVal, AnyRef`两者完美统一起来；不仅考虑层次的顶端，还设计了层次的末端，例如，`Nothing`的抽象，对「类型推演」具有重大意义。
+`Scala`借鉴了`Smalltalk`的「对象模型」，修正了`Java`对象模型存在的诸多不足。例如，在没有损失性能的前提下，将`AnyVal, AnyRef`两者完美统一起来；不仅考虑层次的顶端，还设计了层次的末端，例如，`Nothing`的抽象，对「类型推演」具有重大意义。
 
-`Scala`也借鉴了`Haskell`类型系统的设计，及其函数式的思维，并结合自身特性，优雅地将`OO`和`FP`整合在一起，取长补短，极大地增强了`Scala`的威力。
+`Scala`也借鉴了`Haskell`「类型系统」的设计，及其「函数式」的思维，并结合自身特性，优雅地将`OO`和`FP`整合在一起，取长补短，极大地增强了`Scala`的威力。
 
-`Scala`也借鉴了`C++`多重继承，并吸收了`Ruby`的`Mixin`的特性，设计了强大的`trait`机制实现灵活的对象组合机制。
+`Scala`也借鉴了`C++`「多重继承」，并吸收了`Ruby`的`Mixin`的特性，设计了强大的`trait`机制实现灵活的对象组合机制。
 
 `Scala`也借鉴了`Erlang`的思想，在没有改变内核的情况下，通过扩展类库的方式支持`actor`的并发编程模式。
 
-`Scala`也借鉴了`C++`语言的一些特性，例如操作符重载，隐式转换等特性；尤其增强了的「隐式转换」成为`Scala`可扩展性的重要机制。
+`Scala`也借鉴了`C++`语言的一些特性，例如「操作符重载」，「隐式转换」等特性；尤其增强了的「隐式转换」成为`Scala`可扩展性的重要机制。
 
 ## Scala的特质
 
@@ -48,7 +48,7 @@
 
 > 需求：要定义一个「读取器」，可以从字符中直接获取，可以从文件中读取，甚至从网络`IO`读取。
 
-为了得到一致的抽象，可以定义`Reader`的抽象体，并对「数据源」这一变化方向进行抽象。`Scala`是一门多范式的程序设计语言，这里尝试使用两种不同的思维尝试解决这个问题。
+为了得到一致的抽象，可以定义`Reader`的抽象体，并对「数据源」这一变化方向进行分离。`Scala`是一门多范式的程序设计语言，这里尝试使用两种不同的思维尝试解决这个问题。
 
 ##### 类型参数
 
@@ -72,14 +72,10 @@ class StringReader(val source: String) extends Reader[String] {
 再定义一个`FileReader`，数据源从文本文件中获取。
 
 ```scala
-import scala.io.Source
-import scala.util.Properties.lineSeparator
-import scalaspec.control.using
-
 class FileReader(val source: File) extends Reader[File] {
   def read: String = 
     using(Source.fromFile(source)) { file => 
-      file.getLines.mkString(lineSeparator) 
+      file.getLines.mkString(Properties.lineSeparator) 
     }
 }
 ```
@@ -88,7 +84,7 @@ class FileReader(val source: File) extends Reader[File] {
 
 ##### 抽象类型
 
-首先定义一个抽象类型：`type In`；基于抽象类型`In`，再定义了一个抽象字段：`val source: In`；此外，`Reader`还定义了一个抽象方法`read`。
+也可以先定义一个抽象类型：`type In`；基于抽象类型`In`，再定义了一个抽象字段：`val source: In`；最后，`Reader`还定义了一个抽象方法`read`。
 
 ```scala
 trait Reader {
@@ -107,26 +103,21 @@ class StringReader(val source: String) extends Reader {
 }
 ```
 
-再定义一个`FileReader`，数据源从文本文件中获取。
+如果数据源从文本文件中获取，`FileReader`实现如下：
 
 ```scala
-import scala.io.Source
-import scala.util.Properties.lineSeparator
-
-import scalaspec.control.using
-
 class FileReader(val source: File) extends Reader {
   type In = File
   def read: String = 
     using(Source.fromFile(source)) { file =>
-      file.getLines.mkString(lineSeparator) 
+      file.getLines.mkString(Properties.lineSeparator) 
     }
 }
 ```
 
 ### Scala是抽象的
 
-`Scala`对于控制系统的复杂度拥有强大的抽象能力。甚至，`Scala`具备「控制结构」的抽象能力，使得设计更加正交，合理，程序更加简单，优雅。
+`Scala`对于控制系统的复杂度拥有强大的抽象能力。甚至具备「控制结构」的抽象能力，使得设计更加正交，合理，程序更加简单，优雅。
 
 > 需求1：判断某个单词是否包含数字
 
@@ -145,10 +136,10 @@ public static boolean hasDigit(String word) {
 
 > 需求2：判断某个单词是否包含大写字母
 
-当然，可以通过复制粘贴，重复实现相同的逻辑；但是，如此将导致重复设计。
+当然，可以通过复制粘贴，重复实现相同的逻辑；但是将导致明显的重复设计。
 
 ```java
-public static boolean hasDigit(String word) {
+public static boolean hasUpperCase(String word) {
   for (int i = 0; i < word.length(); i++)
     if (Character.isUpperCase(word.charAt(i)))
       return true;
@@ -156,7 +147,7 @@ public static boolean hasDigit(String word) {
 }
 ```
 
-为了得到更为抽象的设计，使得代码具有高度的可复用性，可以提取一个抽象的接口。
+为了得到更为抽象的设计，使得代码具有高度的可复用性，可以提取一个抽象的`CharacterSpec`概念。
 
 ```java
 public interface CharacterSpec {
@@ -164,7 +155,7 @@ public interface CharacterSpec {
 }
 ```
 
-为了保持抽象在同一个层次，可以定义一个新的抽象函数。
+`hasDigit, hasUpperCase`合二为一，实现算法逻辑的代码复用。
 
 ```java
 public static boolean exists(String word, CharacterSpec spec) {
@@ -175,7 +166,7 @@ public static boolean exists(String word, CharacterSpec spec) {
 }
 ```
 
-可以如下使用这个抽象函数，判断单词是否包含数字。
+可以如下使用这个函数，判断单词是否包含数字。
 
 ```java
 exists(word, new CharacterSpec() {
@@ -207,20 +198,20 @@ exists(word, new CharacterSpec() {
 exists(word, c -> Character.isDigit(c));
 ```
 
-使用「方法引用」，可以进一步改善程序的表达力。
+如果使用「方法引用」，可以进一步改善程序的表达力。
 
 ```java
 exists(word, Character::isDigit);
 ```
 
-但是，即使使用`Java8`，设计依然还是美中不足。其一，`exists`拥有两个参数，如果能够做到如下的代码块那就太神奇了。
+但是，即使使用`Java8`，设计依然还是美中不足。其一，`exists`拥有两个参数，如果能够做到如下的「代码块」，那就太神奇了。
 
 ```java
 // 假设可以定义代码块
 exists(word) { Character::isDigit };
 ```
 
-其二，如果将`exists`成为`String`的一个方法，用户代码将更加具有`OO`的风格了。
+其二，如果将`exists`成为`String`的一个方法，设计将更加具有`OO`的风格了。
 
 ```java
 // 假设String拥有exists方法
@@ -231,7 +222,7 @@ word.exists(Character::isDigit);
 
 ##### 使用Scala
 
-使用`Scala`，可以复用`Java`中既有的结构。按照`Scala`惯例，对`Java`实现的`StringUtil.exists`可以做一个简单的包装。
+首先，`Scala`可以兼容既有的`Java`设计，而无需付出额外的成本。按照惯例，对`Java`实现的`StringUtil.exists`可以做一个简单的包装，隐藏匿名内部类的实现细节，并对外提供「代码块」定制的风格。
 
 ```scala
 def exists(s: String)(p: Char => Boolean): Boolean =
@@ -240,7 +231,7 @@ def exists(s: String)(p: Char => Boolean): Boolean =
   })
 ```
 
-相比`Java`的实现，`Scala`可以借助「柯里化」的机制，进一步改善代码的表达力。
+也就是说，相比`Java`的实现，`Scala`借助「柯里化」的机制，进一步改善代码的表达力。
 
 ```scala
 exists(word) { _.isUpper }
@@ -252,7 +243,7 @@ exists(word) { _.isUpper }
 word.exists(_.isUpper)
 ```
 
-如果你偏爱大括号，也可以写成这样：
+如果偏爱大括号，也可以写成这样：
 
 ```scala
 word.exists { _.isUpper }
@@ -260,7 +251,7 @@ word.exists { _.isUpper }
 
 ### Scala是简洁的
 
-`Scala`极度讨厌「重复」，严格坚持`DRY(Don't Repeat Youself)`原则。不仅仅体现在语法上，还包括类库的设计上。
+`Scala`极度讨厌「重复」，严格坚持`DRY(Don't Repeat Youself)`原则。不仅体现在语法上，还包括类库的设计上。
 
 > 需求：设计一个货币的值对象。
 
@@ -268,7 +259,7 @@ word.exists { _.isUpper }
 
 `Java`实现「值对象」时，语法较为啰嗦，并具有相同的模式，很容易形成重复的「样板代码」。
 
-例如使用`private`定义字段，并在构造函数进行初始化；定义字段的`Getter`接口；即使`equals，hashCode`等具有逻辑的方法时，也表现为固定的模式。
+例如使用`private`定义字段，并在构造函数进行初始化；然后定义字段的`Getter`接口；即使`equals，hashCode`等具有逻辑的方法时，也表现为固定的模式。
 
 ```java
 public class Currency {
@@ -300,27 +291,27 @@ public class Currency {
 }
 ```
 
-在`Java`社区，也存在一个实用方法，或者类库，支持`equals, hashCode`的自动生成，但因此也要让程序员付出额外的成本。
+在`Java`社区，也存在实用方法，或者类库，支持`equals, hashCode`的自动生成，但也要让程序员付出额外的努力。
 
 ##### 使用Scala
 
-`Scala`对于重复的事情从来不说两次。对于固定的模式，具备最直接、最简洁的表达方式，从而大幅地削减了代码量。
+`Scala`对于重复的事情从来不说两次。对于固定的模式，拥有最直接、最简洁的表达方式，从而大幅地削减了代码量。
 
 ```scala
 case class Currency(amount: Int, designation: String)
 ```
 
-在`Scala`社区，`case class`是定义「值对象」的最佳实践。它天然地拥有`apply`的静态工厂方法，及其`Getter, equals, hashCode`等方法实现。
+在`Scala`社区，`case class`是定义「值对象」的最佳实现模式。它天然地拥有`Getter, equals, hashCode`等方法实现，并且在其「伴生对象」中拥有`apply`的工厂方法。
 
 ### Scala是性感的
 
-`Scala`语法轻量，并具备丰富的表达力。借助于`Scala`强大的「类型推演」能力，`Scala`的简洁程度可以和动态语言相媲美。
+`Scala`语法轻量，并具备丰富的表达力。借助于`Scala`强大的「类型推演」能力，`Scala`的简洁程度可以和「动态语言」相媲美。
 
 > 需求：建立一个电话簿的数据表格。
 
 ##### 使用Java
 
-使用`Java`建立一个简单的电话簿数据表格，类型`HashMap<String, String>`重复地进行声明，构造静态表也使用了特殊的初始化语义。
+使用`Java`建立一个简单的电话簿数据表格。
 
 ```java
 Map<String, String> phonebook = new HashMap<String, String>() {{
@@ -328,6 +319,8 @@ Map<String, String> phonebook = new HashMap<String, String>() {{
   put("Dave", "+9599820012");
 }};
 ```
+
+其中，参数类型`<String, String>`重复地声明了两次，构造静态表也使用了特殊的「初始化」的语义。
 
 ##### 使用Scala
 
@@ -340,7 +333,7 @@ val phonebook = Map(
 )
 ```
 
-没有冗余的类型噪声，而且具有更形象的语法描述。更重要的是，`->`操作符并不是语言内核所支持的，而是通过简单地扩展而实现的。
+没有冗余的类型噪声，而且具有更形象的语法描述。更重要的是，`->`操作符并不是语言内核所支持的，而是通过简单地类库扩展而实现的。
 
 也就是说，`"Horance" -> "+9519728872"`构造了一个类型为`Tuple2[String, String]`的二元组，它等价于`("Horance", "+9519728872")`。
 
@@ -353,6 +346,8 @@ object Predef {
   }
 }
 ```
+
+`ArrowAssoc`实现了`self: A`的功能增强，使其拥有`->`方法，而该方法返回一个二元组。
 
 ### Scala是多变的
 
@@ -449,7 +444,7 @@ object Main extends App {
 
 ##### 形式化
 
-对于资源管理，可以简化为如下的数学模型：给定一个资源`R`，并将资源传递给用户空间，并回调算法`f: R => T`，当过程结束时资源自动释放，其算法可形式化地描述为：
+对于资源管理，可以简化为如下的数学模型：
 
 ```
 Input: Given resource: R
@@ -457,7 +452,7 @@ Output：T
 Algorithm：Call back to user namespace: f: R => T, and make sure resource be closed on done.
 ```
 
-因此，`using`常常被称为「借贷模式」，是保证资源自动回收的重要机制。
+它表示：给定一个资源`R`，并将资源`R`传递给用户空间，并回调算法`f: R => T`；当过程结束时资源自动释放。
 
 ##### using实现
 
@@ -478,19 +473,21 @@ object using {
 }
 ```
 
+`using`常常被称为「借贷模式」，是保证资源自动回收的重要机制。
+
 ##### 控制抽象
 
 使得`using`形如内置于语言的控制结构，其行为类似于`if, while`一样。
 
 ```scala
 def read: String = using(Source.fromFile(source)) { file =>
-  file.getLines.mkString(lineSeparator) 
+  file.getLines.mkString(Properties.lineSeparator) 
 }
 ```
 
 ##### 鸭子编程
 
-`R <: { def close(): Unit }`表明`R`类型必须是具有`def close(): Unit`方法的子类型，这是`Scala`支持「鸭子编程」的一种重要技术。
+`R <: { def close(): Unit }`用于约束`R`类型的特征，它必须拥有`def close(): Unit`方法。这是`Scala`支持「鸭子编程」的一个重要技术。
 
 例如，`File`满足`R`类型的特征，因为它拥有`close`方法。
 
@@ -502,7 +499,7 @@ def read: String = using(Source.fromFile(source)) { file =>
 
 ##### Option
 
-`Option`存在两种形式：`Some, None`，分别表示存在和不存在。在`Scala`社区，`Option`常常用于表示「存在与不存在」两者之间的语义。
+在`Scala`社区，`Option`常常用于表示「存在与不存在」两者之间的语义。它存在两种形式：`Some, None`。
 
 ##### for推导式
 
