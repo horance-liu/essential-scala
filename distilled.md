@@ -1,4 +1,4 @@
-# 破冰之旅
+# Scala精粹
 
 > 戏路如流水，从始至终，点滴不漏。一路百折千回，本性未变，终归大海。一步一戏，一转身一变脸，扑朔迷离。真心自然流露，举手投足都是风流戏。一旦天幕拉开，地上再无演员。
 
@@ -266,7 +266,9 @@ word.exists { _.isUpper }
 
 ##### 使用Java
 
-`Java`实现「值对象」时，语法较为啰嗦，并具有相同的模式，很容易形成重复的「样板代码」。例如使用`private`定义字段，并在构造函数时赋予初始值；接着定义字段的`Getter`接口；即使设计和实现`equals，hashCode`等具有逻辑的方法时，也表现为固定的模式。
+`Java`实现「值对象」时，语法较为啰嗦，并具有相同的模式，很容易形成重复的「样板代码」。
+
+例如使用`private`定义字段，并在构造函数进行初始化；定义字段的`Getter`接口；即使`equals，hashCode`等具有逻辑的方法时，也表现为固定的模式。
 
 ```java
 public class Currency {
@@ -288,17 +290,12 @@ public class Currency {
 
   @Override
   public int hashCode() {
-    return 17 * designation.hashCode() + amount;
+    ...
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof Currency) {
-      Currency other = (Currency)obj;
-   return designation.equals(other.designation) && 
-     amount == other.amount;
- }
- return false;
+    ...
   }
 }
 ```
@@ -332,15 +329,6 @@ Map<String, String> phonebook = new HashMap<String, String>() {{
 }};
 ```
 
-当然，可以利用`Java7`部分的类型推演能力简化实现，但它没有彻底解决问题。
-
-```java
-Map<String, String> phonebook = new HashMap<>() {{
-  put("Horance", "+9519728872");
-  put("Dave", "+9599820012");
-}};
-```
-
 ##### 使用Scala
 
 使用`Scala`，代码实现不仅轻量，表现力也相当不错。
@@ -353,6 +341,18 @@ val phonebook = Map(
 ```
 
 没有冗余的类型噪声，而且具有更形象的语法描述。更重要的是，`->`操作符并不是语言内核所支持的，而是通过简单地扩展而实现的。
+
+也就是说，`"Horance" -> "+9519728872"`构造了一个类型为`Tuple2[String, String]`的二元组，它等价于`("Horance", "+9519728872")`。
+
+事实上，`->`定义在`Predef`中。
+
+```scala
+object Predef {
+  implicit final class ArrowAssoc[A](self: A) extends AnyVal {
+    def ->[B](y: B) = (self, y)
+  }
+}
+```
 
 ### Scala是多变的
 
@@ -499,6 +499,10 @@ def read: String = using(Source.fromFile(source)) { file =>
 `resource: => R`是按照`by-name`传递，在实参传递形参过程中，并未对实参进行立即求值，而将求值推延至`resource: => R`的调用点。
 
 例如，`using(Source.fromFile(source))`并没有马上调用`fromFile`方法，并传递给形参，而将求值推延至`source = Some(resource)`语句，即调用`Some.apply`方法时才展开计算。
+
+##### Option
+
+`Option`存在两种形式：`Some, None`，分别表示存在和不存在。在`Scala`社区，`Option`常常用于表示「存在与不存在」两者之间的语义。
 
 ##### for推导式
 

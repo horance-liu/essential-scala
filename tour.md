@@ -1,40 +1,48 @@
-# Scala.new
+# Scala破冰之旅
 
 > 即使水墨丹青，何以绘出半妆佳人。
 
-`Scala`是一门优雅而又复杂的程序设计语言，初学者很容易陷入细节而迷失方向。这也给我的写作带来了挑战，如果从基本的控制结构，再深入地介绍高级的语法结构，难免让读者生厌。
+`Scala`是一门优雅而又复杂的程序设计语言，初学者很容易陷入细节而迷失方向。这也给我的写作带来了挑战，如果从基本的控制结构，再深入地介绍高级的语法结构，难免让人生厌。
 
 为此，本文另辟蹊径，尝试通过一个简单有趣的例子，概括性地介绍`Scala`常见的语言特性。它犹如一个迷你版的`Scala`教程，带领大家一起领略`Scala`的风采。
 
 ### 问题的提出
 
-`FizzBuzzWhizz`是一个有趣的游戏，以`3, 5, 7`为例，该问题可形式化地描述为：
+有一名体育老师，在某次离下课还有五分钟时，决定玩一个游戏。此时有`100`名学生在上课，游戏的规则如下：
+
+1. 老师先说出三个不同的特殊数(都是个位数)，比如`3, 5, 7`；让所有学生拍成一队，然后按顺序报数；
+2. 学生报数时，如果所报数字是「第一个特殊数(`3`)」的倍数，那么不能说该数字，而要说`Fizz`；如果所报数字是「第二个特殊数(`5`)」的倍数，要说`Buzz`；如果所报数字是「第三个特殊数(`7`)」的倍数，要说`Whizz`。
+3. 学生报数时，如果所报数字同时是「两个特殊数」的倍数，也要特殊处理。例如，如果是「第一个(`3`)」和「第二个(`5`)」特殊数的倍数，那么也不能说该数字，而是要说`FizzBuzz`。以此类推，如果同时是三个特殊数的倍数，那么要说`FizzBuzzWhizz`。
+4. 学生报数时，如果所报数字包含了「第一个特殊数」，那么也不能说该数字，而是要说`Fizz`。例如，要报`13`的同学应该说`Fizz`。
+5. 如果数字中包含了「第一个特殊数」，需要忽略规则`2`和`3`，而使用规则`4`。例如要报`35`，它既包含`3`，同时也是`5`和`7`的倍数，要说`Fizz`，而不能说`BuzzWhizz`；
+6. 否则，就要说对应的数字。
+
+##### 形式化
+
+以`3, 5, 7`为例，该问题可形式化地描述为：
 
 ```scala
-r1
-- times(3) -> Fizz
-- times(5) -> Buzz
-- times(7) -> Whizz
+r1: times(3) => Fizz || 
+    times(5) => Buzz ||
+    times(7) => Whizz
 
-r2
-- times(3) && times(5) && times(7) -> FizzBuzzWhizz
-- times(3) && times(5) -> FizzBuzz
-- times(3) && times(7) -> FizzWhizz
-- times(5) && times(7) -> BuzzWhizz
+r2: times(3) && times(5) && times(7) => FizzBuzzWhizz ||
+    times(3) && times(5) => FizzBuzz  ||
+    times(3) && times(7) => FizzWhizz ||
+    times(5) && times(7) => BuzzWhizz
 
-r3
-- contains(3) -> Fizz
-- the priority of contains(3) is highest
+r3: contains(3) => Fizz
 
-rd
-- others -> others
+rd: others => string of others
 
-spec -> r3 || r2 || r1 || rd
+spec: r3 || r2 || r1 || rd
 ```
 
-其中，`times(3) -> Fizz`表示当输入为`3`的倍数是，输出`Fizz`；`contains(3) -> Fizz`表示当输入的数字包含`3`，则输出`Fizz`，以此类推。
+其中，`times(3) => Fizz`表示：当输入为`3`的倍数时，输出`Fizz`，其他以此类推。
 
-接下来我将使用`Scala`尝试`FizzBuzzWhizz`问题的设计和实现s。
+##### 
+
+
 
 ### 建立测试环境
 
@@ -55,11 +63,9 @@ class RuleSpec extends FunSpec {
 }
 ```
 
-运行测试用例，验证环境可工作。
+运行测试用例，用于验证环境。
 
 ### 第一个测试用例
-
-第一步就是要设计第`1`个测试用例。
 
 ```scala
 it ("times(3) -> fizz" ) {
@@ -67,7 +73,7 @@ it ("times(3) -> fizz" ) {
 }
 ```
 
-它先建立了一个规则：`new Times(3, "Fizz")`，表示如果是`3`的倍数，则输出`Fizz`；此时，如果输入`3*2`的数字，断言预期的结果为`Fizz`。
+它先建立了一个规则：`new Times(3, "Fizz")`，表示如果是`3`的倍数，则输出`Fizz`。此时，如果输入数字`3*2`，断言预期的结果为`Fizz`。
 
 ##### 如果使用Java
 
@@ -91,7 +97,7 @@ public class Times(int n, String word) {
 
 ##### 构造参数
 
-从上述`Java`实现可以看出，当定义一个私有字段时，需要构造函数对它进行初始化。类似重复的样板代码在`Scala`中，可以通过「构造参数」替代，彻底消除重复代码。
+从上述`Java`实现可以看出，当定义一个私有字段时，需要构造函数对它进行初始化。类似重复的「样板代码」在`Scala`中，可以在「主构造函数」中使用「构造参数」代替，彻底消除重复代码。
 
 ```scala
 class Times(n: Int, word: String) {
@@ -101,7 +107,7 @@ class Times(n: Int, word: String) {
 
 ##### 类型的后缀修饰
 
-`Scala`常常将类型的修饰放在后面，以便达成风格的「一致性」，包括：
+`Scala`将类型的修饰放在后面，以便实现风格的「一致性」，包括：
 
 - 变量的类型修饰
 - 函数返回值的类型修饰
@@ -116,7 +122,7 @@ def apply(m: Int): String = word
 
 - 函数原型后面不能略去`=`
 
-`apply`函数原型后面的`=`不能略去，因为`Scala`将函数也看成普通的表达式；否则会限制函数的类型推演的能力，编译器将一律推演函数返回值类型为`Unit`(等价于`Java`中的`void`)。
+`apply`函数原型后面的`=`不能略去，因为`Scala`将函数也看成普通的表达式。否则会限制函数的类型推演的能力，编译器将一律推演函数返回值类型为`Unit`(等价于`Java`中的`void`)。
 
 - 函数返回值常常略去`return`
 
@@ -178,11 +184,13 @@ final abstract class Int private extends AnyVal {
 }
 ```
 
-注意，`Int`的实现由编译器完成，后续章节再重点讲述`Int`类的修饰语法。
+注意，`Int`的实现由编译器完成，后续章节将讲述`Int`的修饰语法。
 
 ##### 面向表达式
 
-`Scala`是一门面向表达式的语言，它所有的结构都具有值，包括`if-else`，函数调用等。其中，`if (m % n == 0) word else ""`类似于`Java`中的`?:`三元表达式。两者功能重复，为此`Scala`并没有提供三元表达式的特性。
+`Scala`是一门面向表达式的语言，它所有的程序结构都具有值，包括`if-else`，函数调用等。其中，`if (m % n == 0) word else ""`类似于`Java`中的三元表达式：`m % n == 0 ? word : ""`。
+
+因为两者功能重复，因此`Scala`并没有提供三元表达式的特性。
 
 ### 使用样本类
 
@@ -227,9 +235,9 @@ object Times {
 ```
 
 >
-> `???`常常用于快速通过编译。在本书中，除非特别说明，否则`???`表示函数实现的占位表示，仅仅为了举例方便而已。
+> 在本书中，除非特别说明，否则`???`表示函数实现的占位表示，仅仅为了方便举例。
 > 
-> 其中，`???`定义在`scala.Predef`中；其中，`Predef`的所有成员被编译器默认导入，对所有程序公开。
+> 其中，`???`定义在`scala.Predef`中；因为`Predef`的所有成员被编译器默认导入，它对所有程序公开。
 > 
 > ```scala
 > def ??? = throw new NotImplementedError
@@ -238,7 +246,7 @@ object Times {
 
 ##### 伴生对象
 
-`object Times`常常称为`class Times`的伴生对象。事实上，伴生对象中的方法，类似于`Java`中的`static`方法。但`Scala`摒弃了`static`的关键字，将面向对象的语义进行统一。
+`object Times`常常称为`class Times`的「伴生对象」。事实上，「伴生对象」中的方法，类似于`Java`中的`static`方法。但`Scala`摒弃了`static`的关键字，将面向对象的语义进行统一。
 
 如果用`Java`设计`case class Times`，其实现类似于：
 
@@ -388,22 +396,6 @@ case class AllOf(rules: Rule*) extends Rule {
 ```scala
 case class AllOf(rules: Rule*) extends Rule {
   def apply(n: Int): String = {
-    var result = new StringBuilder
-    for (r <- rules) {
-      result.append(r(n))
-    }
-    result.toString
-  }
-}
-```
-
-此处使用字符串的缓冲器，收集子规则的运算结果。
-
-##### 使用foreach
-
-```scala
-case class AllOf(rules: Rule*) extends Rule {
-  def apply(n: Int): String = {
     var result = StringBuilder.newBuilder
     rules.foreach { r =>
       result.append(r(n))
@@ -480,11 +472,44 @@ case class AnyOf(rules: Rule*) extends Rule {
 
 ##### 重构测试用例
 
-此时，可以定义一组新的测试用例集合，并使用`describe`分离，并通过显示的`import`明确导入所依赖的类型，与既有的用例集共存，互不干扰。
+此时，可以定义一组新的测试用例集合，并使用`describe`分离用例组，并通过显示地导入所依赖的类型，与既有的用例集共存，互不干扰。
 
-切忌删除既有的`Rule`特质，以及`Times, Contains, Default, AllOf, AnyOf`的实现，包括既有的测试用例；否则既有的测试用例失败，重构的安全网被撕破，将会让重构陷入一个极度危险的境界。
+>
+> 切忌删除既有的`Rule`特质，以及`Times, Contains, Default, AllOf, AnyOf`的实现，包括既有的测试用例；否则既有的测试用例失败，重构的安全网被撕破，将会让重构陷入一个极度危险的境界。
+> 
+> 总之，重构应该保持小步快跑的基本原则。
+> 
 
-总之，重构应该保持小步快跑的基本原则。
+按照`TDD`的规则，可以小步地，安全地逐一驱动实现各个工厂方法。
+
+```scala
+class RuleSpec extends FunSpec {
+  ...
+  describe("Rule using factory method") {
+    import Rule._
+    it ("times(3) -> fizz" ) {
+      times(3, "Fizz")(3 * 2) should be("Fizz")
+    }
+  }
+}
+```
+
+##### 实现工厂
+
+`times`的工厂方法也较容易实现，可以通过搬迁`Times`的逻辑至此即可。
+
+```scala
+object Rule {
+  def times(n: Int, word: String): Int => String =
+    m => if (m % n == 0) word else ""
+}
+```
+
+至此，`times`实现通过测试。
+
+##### 小步快跑
+
+以此类推，通过小步地`TDD`的微循环，将其他工厂方法驱动实现出来。
 
 ```scala
 class RuleSpec extends FunSpec {
@@ -506,17 +531,17 @@ class RuleSpec extends FunSpec {
     }
 
     it ("times(3) && times(5) -> FizzBuzz" ) {
-      allOf(times(3, "Fizz"), times(5, "Buzz"))(3*5) should be("FizzBuzz")
+      anyof(times(3, "Fizz"), times(5, "Buzz"))(3*5) should be("FizzBuzz")
     }
 
     it ("times(3) -> Fizz || times(5) -> Buzz" ) {
-      anyOf(times(3, "Fizz"), times(5, "Buzz"))(3*5) should be("Fizz")
+      anyof(times(3, "Fizz"), times(5, "Buzz"))(3*5) should be("Fizz")
     }
   }
 }
 ```
 
-##### 实现工厂
+`Rule`伴生对象中的工厂方法实现如下。
 
 ```scala
 object Rule {
@@ -529,10 +554,10 @@ object Rule {
   def default: Int => String =
     m => m.toString
   
-  def allOf(rules: (Int => String)*): Int => String = 
+  def anyof(rules: (Int => String)*): Int => String = 
     m => rules.foldLeft("") { _ + _(m) }
     
-  def anyOf(rules: (Int => String)*): Int => String = 
+  def allof(rules: (Int => String)*): Int => String = 
     m => rules.map(_(m))
       .filterNot(_.isEmpty)
       .headOption
@@ -540,11 +565,11 @@ object Rule {
 }
 ```
 
-测试通过，此时可以安全地删除`Times, Contains, Default, AnyOf, AllOf`，以及`Rule`特质，包括遗留的测试用例集合。
+恭喜，通过所有测试。此时可以安全地删除`Times, Contains, Default, AnyOf, AllOf`，`Rule`特质，以及相关的遗留的测试用例了。
 
 ##### 类型别名
 
-可以对`Int => String`定义类型别名，消除类型的重复定义。
+可以对`Int => String`定义「类型别名」，消除类型的重复定义。
 
 ```scala
 object Rule {
@@ -559,10 +584,10 @@ object Rule {
   def default: Rule =
     m => m.toString
 
-  def allOf(rules: (Int => String)*): Rule =
+  def anyof(rules: Rule*): Rule =
     m => rules.foldLeft("") { _ + _(m) }
 
-  def anyOf(rules: (Int => String)*): Rule =
+  def allof(rules: Rule*): Rule =
     m => rules.map(_(m))
       .filterNot(_.isEmpty)
       .headOption
@@ -570,13 +595,15 @@ object Rule {
 }
 ```
 
-至此，设计已经较为干净了。但发现`times, contains, default`之间存在微妙的重复结构。它们各自遵循自己的「匹配规则」，并执行相应的「转换规则」；特殊地，`default`的匹配规则，转换规则都比较特殊，因为它总是匹配成功。
+至此，设计已经较为干净了。但发现`times, contains, default`之间存在微妙的重复结构。它们各自拥有隐晦的「匹配规则」，当匹配成功时，执行相应的「转换规则」。
+
+其中，`default`的匹配规则、转换规则都比较特殊；因为它总是匹配成功，转换时简单地讲数字转换为字符串表示的形式。。
 
 ### 提取匹配器
 
 先提取抽象的「匹配器」概念：`Matcher`。事实上，`Matcher`是一个「一元函数」，入参为`Int`，返回值为`Boolean`，是一种典型的「谓词」。
 
-从`OO`的角度看，`always`是一种典型的`Null Object`实现模式。
+> 从`OO`的角度看，`always`是一个典型的`Null Object`实现模式。
 
 ```scala
 object Matcher {
@@ -592,7 +619,7 @@ object Matcher {
 
 然后再提取抽象的「执行器」概念：`Action`。事实上，`Action`也是一个「一元函数」，入参为`Int`，返回值为`String`。其本质类似于`map`操作，将定义域映射到值域。
 
-其中，`nop`也是一个典型的`Null Object`。
+> 从`OO`的角度看，`nop`也是一个典型的`Null Object`实现模式。
 
 ```scala
 object Action {
@@ -618,12 +645,15 @@ def atom(matcher: => Matcher, action: => Action): Rule =
 
 此时，新建一组用例集合，并使用`atom`的原子接口，并使用`describe`隔离新老用例集，显式地`import`所依赖的类型，保证既有测试用例可用。
 
+> 
+> 在`Rule.atom, Matcher, Action`可运行之前，切忌删除`Rule`中既有的`times, contains, default`，及其相应的测试用例。
+>  
+
 ```scala
 class RuleSpec extends FunSpec {
   ...
-
   describe("using atom rule") {
-    import Rule.{allOf, anyOf, atom}
+    import Rule.{anyof, anyof, atom}
     import Matcher._
     import Action._
 
@@ -647,11 +677,11 @@ class RuleSpec extends FunSpec {
     }
 
     it ("times(3) && times(5) -> FizzBuzz" ) {
-      allOf(r1_3, r1_5)(3*5) should be("FizzBuzz")
+      anyof(r1_3, r1_5)(3*5) should be("FizzBuzz")
     }
 
     it ("times(3) -> Fizz || times(5) -> Buzz" ) {
-      anyOf(r1_3, r1_5)(3*5) should be("Fizz")
+      anyof(r1_3, r1_5)(3*5) should be("Fizz")
     }
   }
 }
@@ -689,19 +719,23 @@ object Rule {
 `Rule`是`FizzBuzzWhizz`最核心的抽象，也是设计的灵魂所在。从语义上`Rule`分为`2`种基本类型，并且两者之间形成了隐式的「树型」结构，体现了「组合式设计」的强大威力。
 
 - 原子规则：`atom`
-- 复合规则: `anyOf, allOf`
+- 复合规则: `anyof, anyof`
 
 `Rule`也是一个「一元函数」，入参为`Int`，返回值为`String`。其中，`def atom(matcher: => Matcher, action: => Action)`的入参使用`by-name`的「惰性求值」特性。
 
 ### 完备用例集
 
-针对于`FizzBuzzWhizz`问题，以`3, 5, 7`为例，其完备的用例集可以如下描述。此处使用表格驱动的方式组织用例，消除大量的重复代码，并改善表达力。
+针对于`FizzBuzzWhizz`问题，以`3, 5, 7`为例，其完备的用例集可以如下描述。此处使用表格驱动的方式组织用例，消除大量的重复代码，并改善其表达力。
 
 ```scala
 import org.scalatest._
 import prop._
 
 class RuleSpec extends PropSpec with TableDrivenPropertyChecks with Matchers {
+  import Rule._
+  import Matcher._
+  import Action._
+  
   val spec = {
     val r1_3 = atom(times(3), to("Fizz"))
     val r1_5 = atom(times(5), to("Buzz"))
@@ -731,7 +765,7 @@ class RuleSpec extends PropSpec with TableDrivenPropertyChecks with Matchers {
     ((5 * 7) * 2, "BuzzWhizz"),
     (3 * 5 * 7,   "FizzBuzzWhizz"),
     (13,          "Fizz"),
-    (35,          "Fizz"),  // 35 > 5*7
+    (35/*5*7*/,   "Fizz"),
     (2,           "2")
   )
 
@@ -769,5 +803,5 @@ anyof: rule1 || rule2 ...
 
 本文通过对`FizzBuzzWhizz`的小游戏的设计和实现，首先尝试使用`Scala`的面向对象实现，然后采用函数式的设计；采用`TDD`的方式，演进式地完成功能的实现。
 
-中间也曾遇到了「样本类」，「类型别名」等常用的技术。相信经过本文的实践，你应该对`Scala`有了一个大体的影响和感觉，接下来让我们开启`Scala`的愉快之旅吧。
+中间也曾遇到了「样本类」，「类型别名」，「伴生对象」等常用的技术。相信经过本文的实践，你应该对`Scala`有了一个大体的影响和感觉，接下来让我们开启`Scala`的愉快之旅吧。
 
