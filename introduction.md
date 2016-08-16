@@ -10,80 +10,31 @@
 
 `Scala`运行于`JVM`之上，并与现有的`JVM`生态系统无缝链接，而无需定义额外的胶水代码。它兼容既有`Java`的类库，让成千上万的程序可以继续工作，并能够得以复用。
 
-## Hello World
+## Scala的哲学
 
-这是一个`Scala`的`Hello World`程序。
+`Scala`的设计吸收了众多程序设计语言优秀的思想，取精除粕，形成了自身特有的哲学思维体系。
 
-```scala
-object World extends App {
-  println("hello, world!")
-}
-```
+- 自由：释放自由，方能创造奇迹；
+- 复用：讨厌重复，重用既有代码；
+- 抽象：正交设计，拥抱未来变化；
+- 开放：对外扩展开放，对内拒绝修改；
+- 友好：专家级的瑞士军刀；
 
-执行如下命令，可以编译、执行该程序。
+## Scala的基因
 
-```bash
-$ scala World.scala
-hello, world!
-```
+`Scala`首先偏向`Java`社区的使用习惯，包括表达式，代码块，还有包和引用的等语法习性。而对于`Java`用户唯一提出挑战的就是「类型声明」被放在后面了；但是，当习惯了`Scala`代码风格后，你会发现后置类型修饰具有很多优势。
 
-恭喜你，你的第一个`Scala`程序终于面世了。
+`Scala`也借鉴了`Smalltalk`的对象模型，修正了`Java`对象模型存在的诸多不足。例如，在没有损失性能的前提下，将`AnyVal, AnyRef`两者完美统一起来；不仅考虑层次的顶端，还设计了层次的末端，例如，`Nothing`的抽象，对「类型推演」具有重大意义。
 
-### 混入App特质
+`Scala`也借鉴了`Haskell`类型系统的设计，及其函数式的思维，并结合自身特性，优雅地将`OO`和`FP`整合在一起，取长补短，极大地增强了`Scala`的威力。
 
-`Scala`摒弃了`static`的语义，使用`object`定义「单键对象」。通过定义单键对象`object World`，并混入`App`特质，从根本上消除了`main`函数定义这一固定模式的重复实现。
+`Scala`也借鉴了`C++`多重继承，并吸收了`Ruby`的`Mixin`的特性，设计了强大的`trait`机制实现灵活的对象组合机制。
 
-其中，`App`拥有`main`函数的所有特性，包括名为`args`的程序选项。
+`Scala`也借鉴了`Erlang`的思想，在没有改变内核的情况下，通过扩展类库的方式支持`actor`的并发编程模式。
 
-### 不使用App特质
+`Scala`也借鉴了`C++`语言的一些特性，例如操作符重载，隐式转换等特性；尤其增强了的「隐式转换」成为`Scala`可扩展性的重要机制。
 
-如果不使用`App`特质，上述代码等价于：
-
-```scala
-object World {
-  def main(args: Array[String]) {
-    println("hello, world!")
-  }
-}
-```
-
-`Scala`并没有像`Java`一样，针对「基本类型」(例如`int`)，「数组类型」(例如`int[]`)定义特殊的语法，它将一切都看成对象。
-
-`Array[String]`是一个对「原生数组」进行包装，「类型参数」为`String`的普通类。需要注意的是，「类型参数」使用中括号，而不是使用尖括号。
-
-值得庆幸的是，`Scala`编译器会尽最大可能将其还原为原生的数组类型，以便获得最佳的执行效率。
-
-### 函数返回值类型
-
-`Scala`社区习惯于将「变量」，「函数返回值」的类型定义放在后面，以便做到风格的一致性，例如`args: Array[String]`。
-
-为了简便，上例将`main`实现为一个「过程」，它忽略了`main`函数返回值的类型定义，其实现等价于：
-
-```scala
-def main(args: Array[String]): Unit = {
-  println("hello, world!")
-}
-```
-
-其中，`Unit`类似于`void`，`()`是它拥有的唯一的实例。
-
-### Predef
-
-`println("hello, world!")`等价于`Console.println("hello, world!")`，因为`println`定义于`Predef`对象之中：
-
-```scala
-package scala
-
-object Predef {
-  def println(x: Any) = Console.println(x)
-}
-```
-
-其中，`Predef`对象被`Scala`默认导入，并对所有`Scala`程序可见。
-
-## 选择Scala
-
-`Scala`的设计吸收了众多程序设计语言优秀的思想，取其精华，去其糟粕。`Scala`博大精深，并拥有与众不同的气质，及其鲜明的哲学思维体系。
+## Scala的特质
 
 接下来，通过几个简单的例子，阐述`Scala`所具有的一些特点，并阐述选择`Scala`的动机。
 
@@ -362,7 +313,7 @@ public class Currency {
 case class Currency(amount: Int, designation: String)
 ```
 
-在`Scala`社区，`case class`是定义「值对象」的最佳实践。它天然地拥有`apply`的静态工厂方法；自动地拥有`Getter, equals, hashCode`等方法实现。
+在`Scala`社区，`case class`是定义「值对象」的最佳实践。它天然地拥有`apply`的静态工厂方法，及其`Getter, equals, hashCode`等方法实现。
 
 ### Scala是性感的
 
@@ -527,6 +478,16 @@ object using {
 }
 ```
 
+##### 控制抽象
+
+使得`using`形如内置于语言的控制结构，其行为类似于`if, while`一样。
+
+```scala
+def read: String = using(Source.fromFile(source)) { file =>
+  file.getLines.mkString(lineSeparator) 
+}
+```
+
 ##### 鸭子编程
 
 `R <: { def close(): Unit }`表明`R`类型必须是具有`def close(): Unit`方法的子类型，这是`Scala`支持「鸭子编程」的一种重要技术。
@@ -537,30 +498,20 @@ object using {
 
 `resource: => R`是按照`by-name`传递，在实参传递形参过程中，并未对实参进行立即求值，而将求值推延至`resource: => R`的调用点。
 
-例如，`using(Source.fromFile(source))`并没有马上发生调用`fromFile`方法并传递给形参，而将求值推延至`source = Some(resource)`语句，即调用`Some.apply`方法时才展开计算。
-
-##### 控制抽象
-
-使得`using`形如内置于语言的控制结构，其行为类似于`if, while`一样。
-
-```scala
-def read: String = using(fromFile(source)) { file =>
-  file.getLines.mkString(lineSeparator) 
-}
-```
+例如，`using(Source.fromFile(source))`并没有马上调用`fromFile`方法，并传递给形参，而将求值推延至`source = Some(resource)`语句，即调用`Some.apply`方法时才展开计算。
 
 ##### for推导式
 
 在`finally`关闭资源时，使用`for`推导式过滤掉`None`。也就是说，如下三种形式是等价的。
 
-- 过滤掉`None`，并自动提取`Option`中的元素
+- 过滤掉`None`，并自动提取`Option`中的元素。
 
 ```scala
 for (s <- source)
   s.close
 ```
 
-- 使用`if`，但需要从`Some`中手动`get`
+- 使用`if`，但需要从`Some`中手动`get`。
 
 ```scala
 if (source != None)
@@ -571,13 +522,13 @@ if (source != None)
 
 软件设计的目的就是为了控制复杂性，让软件应对未来变化具有更好的弹性。`Scala`强大而自由，当程序员设计一个应用和类库时，具有很大的自由空间。
 
-但是，`Scala`过度的灵活性，往往会诱惑他人掉进复杂性的深渊而不能自拔。它犹如具有「魔戒」的力量，一股强大、而致命的力量。
+但是，`Scala`过度的灵活性，往往会诱惑他人掉进复杂性的深渊而不能自拔。它犹如具有「魔戒」的力量，虽然强大，但也很致命。
 
 > Complexity is like a bug light for smart people. We can't resist it, even though we know it's bad for us. -- Alex Payne.
 
-因此，应该理智地抵制复杂性的诱惑，才能控制和发挥`Scala`的真正威力。使用`Scala`不是为了炫技，而应该尽最大的可能让设计保持简单。
+因此，应该理智地抵制复杂性的诱惑，才能真正地发挥`Scala`的威力。使用`Scala`不是为了炫技，而应该尽最大的可能让设计保持简单。
 
-`Martin Ordersky`也在`2016`年元旦时发文，号召社区有志之士在未来的时间里尽最大可能地降低`Scala`的复杂度。
+`Martin Ordersky`也在`2016`年元旦之初发文，号召社区有志之士在未来的时间里尽最大可能地降低`Scala`的复杂度。
 
 我坚信，`Scala`的明天会更简单，更加漂亮。
 
