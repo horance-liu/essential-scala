@@ -11,10 +11,15 @@
 有一名体育老师，在某次离下课还有五分钟时，决定玩一个游戏。此时有`100`名学生在上课，游戏的规则如下：
 
 1. 老师先说出三个不同的特殊数(都是个位数)，比如`3, 5, 7`；让所有学生拍成一队，然后按顺序报数；
+
 2. 学生报数时，如果所报数字是「第一个特殊数(`3`)」的倍数，那么不能说该数字，而要说`Fizz`；如果所报数字是「第二个特殊数(`5`)」的倍数，要说`Buzz`；如果所报数字是「第三个特殊数(`7`)」的倍数，要说`Whizz`。
+
 3. 学生报数时，如果所报数字同时是「两个特殊数」的倍数，也要特殊处理。例如，如果是「第一个(`3`)」和「第二个(`5`)」特殊数的倍数，那么也不能说该数字，而是要说`FizzBuzz`。以此类推，如果同时是三个特殊数的倍数，那么要说`FizzBuzzWhizz`。
+
 4. 学生报数时，如果所报数字包含了「第一个特殊数」，那么也不能说该数字，而是要说`Fizz`。例如，要报`13`的同学应该说`Fizz`。
+
 5. 如果数字中包含了「第一个特殊数」，需要忽略规则`2`和`3`，而使用规则`4`。例如要报`35`，它既包含`3`，同时也是`5`和`7`的倍数，要说`Fizz`，而不能说`BuzzWhizz`；
+
 6. 否则，直接说出要报的数字。
 
 ##### 形式化
@@ -76,7 +81,7 @@ it ("times(3) -> fizz" ) {
 为了快速通过测试，可以做简单实现。如果使用`Java`，`Times`实现大致如下。
 
 ```java
-public class Times(int n, String word) {
+public class Times {
   private final int n;
   private final String word;
 
@@ -332,7 +337,31 @@ case class Default() {
 }
 ```
 
-注意，`case class Default()`，及其调用点`Default()(2)`，不能略去`()`。
+##### 定制伴生对象
+
+上述实现中，`case class Default()`，及其调用点`Default()(2)`，不能略去`()`。这非常讨厌，可以自行定制伴生对象的`apply`工厂方法，改善表达力。
+
+```scala
+class Default {
+  def apply(m: Int) = m.toString
+}
+
+object Default {
+  def default = new Default
+}
+```
+
+此时，便可以删除测试用例中冗余的`()`。
+
+```scala
+import Default._
+
+it ("default rule" ) {
+  default(2) should be("2")
+}
+```
+
+值得庆幸的是，`default`并非`Scala`的保留字。
 
 ### 提取抽象
 
@@ -390,18 +419,48 @@ case class AllOf(rules: Rule*) extends Rule {
 ```scala
 case class AllOf(rules: Rule*) extends Rule {
   def apply(n: Int): String = {
-    var result = StringBuilder.newBuilder
-    rules.foreach { r =>
-      result.append(r(n))
-    }
+    val result = new StringBuilder
+    rules.foreach((r: Rule) => result.append(r.apply(n)))
     result.toString
   }
 }
 ```
 
-此处，`r(n)`等价于`r.apply(n)`；`r`的静态类型为`Rule`，但其运行时类型为`Times`，它将在运行时发生运行时「多态」的行为。
+其中，`r`的静态类型为`Rule`，而其运行时类型为`Times`，它将在运行时发生「子类化多态」。
+
+##### 高阶函数
+
+一般地，可以传递或返回「函数值」的函数常称为「高阶函数」。例如`foreach`就是一个高阶函数，它通过传递`(r: Rule) => result.append(r.apply(n))`的函数值实现容器的遍历；其中，函数字面值的类型为`Function1[Rule, StringBuilder]`，表示参数为`Rule`，返回值为`StringBuilder`的函数。
+
+对于此例子，如果你偏爱大括号，则可以如此实现。
+
+```scala
+rules.foreach { (r: Rule) => 
+  result.append(r.apply(n))
+}
+```
+
+借助类型推演，可以去除`r`的类型修饰。
+
+```scala
+rules.foreach { r => result.append(r.apply(n)) }
+```
+
+其中，`apply`有特殊的调用语义，因此代码可以更简洁。
+
+```scala
+rules.foreach { r => result.append(r(n)) }
+```
+
+甚至，可以略去一些冗余的语法符号。
+
+```scala
+rules foreach { r => result append r(n) }
+```
 
 ##### 使用foldLeft
+
+事实上，上述`AllOf.apply`实现可以简化为函数式中常见的「规约」操作。
 
 ```scala
 case class AllOf(rules: Rule*) extends Rule {
@@ -419,7 +478,7 @@ case class AllOf(rules: Rule*) extends Rule {
 }
 ```
 
-因为`apply`方法具有特殊的函数调用语义，可以进一步简化实现。
+同样地，因为`apply`方法具有特殊的函数调用语义，可以进一步简化实现。
 
 ```scala
 case class AllOf(rules: Rule*) extends Rule {
@@ -427,6 +486,25 @@ case class AllOf(rules: Rule*) extends Rule {
     rules.foldLeft("") { _ + _(n) }
 }
 ```
+
+##### 剖析`foldLeft`
+
+`foldLeft`实现在`TraversableOnce`中。
+
+```scala
+trait TraversableOnce[+A] {
+  ...
+  def foreach[U](f: A => U): Unit
+
+  def foldLeft[B](z: B)(op: (B, A) => B): B = {
+    var result = z
+    foreach(x => result = op(result, x))
+    result
+  }
+}
+```
+
+`foldLeft`使用函数式中一个重要的技术：「柯里化」。其中，`z`为迭代的初始值，`op: (B, A) => B`中第一个参数为「收集参数」，通过遍历将容器的元素收集起来。
 
 ### 实现AnyOf
 
@@ -448,6 +526,8 @@ case class AnyOf(rules: Rule*) extends Rule {
 
 ##### 快速实现AnyOf
 
+鉴于`AnyOf`的基础，可以快速地实现`AnyOf`。
+
 ```scala
 case class AnyOf(rules: Rule*) extends Rule {
   def apply(n: Int): String = 
@@ -458,11 +538,11 @@ case class AnyOf(rules: Rule*) extends Rule {
 }
 ```
 
-测试用例通过了。
+此时，测试用例通过了。
 
 ##### 隐式树
 
-`AllOf, AnyOf`是一个「复合规则」，而`Times, Contains, Default`表示「原子规则」。它们之间构成了一棵「隐式树」，它们的关键抽象在于`Rule`。
+`AllOf, AnyOf`是一个「复合规则」，而`Times, Contains, Default`表示「原子规则」。它们之间构成了一棵「隐式树」，它们的关键在于抽象的`Rule`特质的提取。
 
 ### 提供工厂方法
 
@@ -483,7 +563,7 @@ case class AnyOf(rules: Rule*) extends Rule {
 ```scala
 class RuleSpec extends FunSpec {
   ...
-  describe("Rule using factory method") {
+  describe("functional style") {
     import Rule._
     it ("times(3) -> fizz" ) {
       times(3, "Fizz")(3 * 2) should be("Fizz")
@@ -539,7 +619,7 @@ class RuleSpec extends FunSpec {
 }
 ```
 
-`Rule`伴生对象中的工厂方法实现如下。
+最终，在`Rule`伴生对象中实现了所有方法。
 
 ```scala
 object Rule {
@@ -593,9 +673,26 @@ object Rule {
 }
 ```
 
-至此，设计已经较为干净了。但发现`times, contains, default`之间存在微妙的重复结构。
+至此，设计已经较为干净了。如果将`default`稍微进行改造，很容易发现`times, contains, default`之间存在微妙的重复结构。
+
+```scala
+def times(n: Int, word: String): Rule =
+  m => if (m % n == 0) word else ""
+
+def contains(n: Int, word: String): Rule =
+  m => if (m.toString.contains(n.toString)) word else ""
+
+def default: Rule =
+  m => if (true) m.toString else ""
+```
 
 它们各自拥有隐晦的「匹配规则」，当匹配成功时，执行相应的「转换规则」；其中，`default`的「匹配规则」比较特殊，因为它总是匹配成功。
+
+因此，三者实现可归结为一种统一的抽象行为:
+
+```scala
+m => if (matcher) action(m) else ""
+```
 
 ### 提取匹配器
 
@@ -702,38 +799,103 @@ object Rule {
 - 原子规则：`atom`
 - 复合规则: `anyof, anyof`
 
+### 实现门面
+
+例如，给定`100`学生，如果输入的三个特殊数为`3, 5, 7`，如下调用可得到最终的结果序列。
+
+```scala
+start(100)(3, 5, 7)
+```
+
+从某种意义讲，`spec`使用其内部基本组件构建了该领域的一个`DSL`实现，它具有很强的表现力。
+
+```scala
+import Rule._
+import Matcher._
+import Action._
+
+object Game {  
+  def spec(n1: Int, n2: Int, n3: Int): Rule = {
+    val r1_1 = atom(times(n1), to("Fizz"))
+    val r1_2 = atom(times(n2), to("Buzz"))
+    val r1_3 = atom(times(n3), to("Whizz"))
+
+    val r1 = anyof(r1_1, r1_2, r1_3)
+
+    val r2 = anyof(
+      allof(r1_1, r1_2, r1_3),
+      allof(r1_1, r1_2),
+      allof(r1_1, r1_3),
+      allof(r1_2, r1_3))
+
+    val r3 = atom(contains(n1), to("Fizz"))
+    val rd = atom(always(true), nop);
+
+    anyof(r3, r2, r1, rd)
+  }
+  
+  def start(n: Int)(n1: Int, n2: Int, n3: Int): Seq[String] = {
+    val saying = spec(n1, n2, n3)
+    (1, n) map saying
+  }
+}
+```
+
+##### 消除重复
+
+事实上，可以将`Game.spec`中的`r1, r2`进行合并。首先，将`r1`做一次等价变换：
+
+```scala
+val r1 = anyof(allof(r_n1), allof(r_n2), allof(r_n3))
+```
+
+因为`r2`的优先级高于`r1`，因此可以将`r1`合并至`r2`的尾部。
+
+```scala
+val r2 = anyof(
+  allof(r_n1, r_n2, r_n3),
+  allof(r_n1, r_n2),
+  allof(r_n1, r_n3),
+  allof(r_n2, r_n3),
+  allof(r_n1), 
+  allof(r_n2), 
+  allof(r_n3))
+```
+
+实际上，`r2`的本质就是枚举集合`{r_n1, r_n2, r_n3}`的所有「真子集」，然后将每个子集`{R1, R2, ..., Rn}`变换为`allof(R1, R2, ..., Rn)`。
+
+因此，可以提取一个抽象操作：`comb(rules: Rule*)`，用于自动地枚举出`rules`的所有「真子集」。
+
+```scala
+val r2 = comb(r_n1, r_n2, r_n3)
+```
+
+##### 实现comb
+
+当一个私有函数比较短小时，可以实现为「本地方法」，这样即可保证函数的职责单一，并取得良好的封装性，同时还可以避免函数间的参数传递。
+
+```scala
+def comb(rules: Rule*) = {
+  def comb: Seq[Rule] = {
+    (1 to rules.size).reverse
+      .flatMap(rules.combinations(_))
+      .map(allof(_: _*))
+  }
+  anyof(comb: _*)
+}
+```
+
+其中，`1 to rules.size`构造了一个`Rang`，并通过调用`reverse`，取得其「逆序」；通过调用`flatMap`可以得到`rules`的真子集，其中`rules.combinations(n)`可以得到「长度为`n`的子集」；然后针对于每个子集合`{R1, R2, ..., Rn}`，通过`map`变换为`allof(R1, R2, ..., Rn)`。
+
 ### 完备用例集
 
-针对于`FizzBuzzWhizz`问题，以`3, 5, 7`为例，可以对测试用例进行整理，形成完备的用例集。此处使用表格驱动的方式组织用例，消除大量的重复代码，并改善其表达力。
+而对于测试用例，以`3, 5, 7`为例，可以对测试用例进行整理，形成完备的用例集。此处使用「数据驱动」的方式组织用例，消除用例的重复代码，并改善表达力。
 
 ```scala
 import org.scalatest._
 import prop._
 
 class RuleSpec extends PropSpec with TableDrivenPropertyChecks with Matchers {
-  import Rule._
-  import Matcher._
-  import Action._
-  
-  val spec = {
-    val r1_3 = atom(times(3), to("Fizz"))
-    val r1_5 = atom(times(5), to("Buzz"))
-    val r1_7 = atom(times(7), to("Whizz"))
-
-    val r1 = anyof(r1_3, r1_5, r1_7)
-
-    val r2 = anyof(
-      allof(r1_3, r1_5, r1_7),
-      allof(r1_3, r1_5),
-      allof(r1_3, r1_7),
-      allof(r1_5, r1_7))
-
-    val r3 = atom(contains(3), to("Fizz"))
-    val rd = atom(always(true), nop);
-
-    anyof(r3, r2, r1, rd)
-  }
-
   val specs = Table(
     ("n",         "expect"),
     (3,           "Fizz"),
@@ -749,6 +911,7 @@ class RuleSpec extends PropSpec with TableDrivenPropertyChecks with Matchers {
   )
 
   property("fizz buzz whizz") {
+    val spec = Game.spec(n1, n2, n3)
     forAll(specs) { spec(_) should be (_) }
   }
 }
@@ -782,5 +945,5 @@ anyof: rule1 || rule2 ...
 
 本文通过对`FizzBuzzWhizz`小游戏的设计和实现，首先尝试使用`Scala`的面向对象技术，然后采用函数式的设计；过程采用`TDD`小步快跑，演进式地完成了所有功能。
 
-中间遇到了「特质」，「子类化多态」，「样本类」，「类型别名」，「伴生对象」，「变长参数」，「惰性求值」，「高阶函数」，「柯里化」等常用的技术。经过这个例子的实践，相信大家对`Scala`有了一个大体的印象和感觉，接下来让我们开启`Scala`的星际之旅吧。
+中间遇到了「特质」，「子类化多态」，「样本类」，「类型别名」，「伴生对象」，「变长参数」，「惰性求值」，「高阶函数」，「柯里化」，「本地方法」等常用的技术。经过这个例子的实践，相信大家对`Scala`有了一个大体的印象和感觉，接下来让我们开启`Scala`的星际之旅吧。
 

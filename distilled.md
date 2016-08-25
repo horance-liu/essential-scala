@@ -337,18 +337,6 @@ val phonebook = Map(
 
 也就是说，`"Horance" -> "+9519728872"`构造了一个类型为`Tuple2[String, String]`的二元组，它等价于`("Horance", "+9519728872")`。
 
-事实上，`->`定义在`Predef`中。
-
-```scala
-object Predef {
-  implicit final class ArrowAssoc[A](self: A) extends AnyVal {
-    def ->[B](y: B) = (self, y)
-  }
-}
-```
-
-`ArrowAssoc`实现了`self: A`的功能增强，使其拥有`->`方法，而该方法返回一个二元组。
-
 ### Scala是多变的
 
 `Scala`犹如变形金刚，拥有无穷变化的空间。`Scala`倡导一个问题，拥有多种解法的思维习惯。当面对具体问题时，使得程序员拥有更多的自由选择权。
@@ -442,19 +430,19 @@ object Main extends App {
 
 以`using`的设计为例，讲解`Scala`对于扩展性的支持，及其设计内部`DSL`的技术，加深对`Scala`的理解。
 
-##### 形式化
+##### 控制抽象
 
-对于资源管理，可以简化为如下的数学模型：
+`using`形如内置于语言的控制结构，其行为类似于`if, while`一样。
 
+```scala
+def read: String = using(Source.fromFile(source)) { file =>
+  file.getLines.mkString(Properties.lineSeparator) 
+}
 ```
-Input: Given resource: R
-Output：T
-Algorithm：Call back to user namespace: f: R => T, and make sure resource be closed on done.
-```
-
-它表示：给定一个资源`R`，并将资源`R`传递给用户空间，并回调算法`f: R => T`；当过程结束时资源自动释放。
 
 ##### using实现
+
+`using`实现技术常称为「借贷模式」，是保证资源自动回收的重要机制。
 
 ```scala
 import scala.language.reflectiveCalls
@@ -471,52 +459,6 @@ object using {
     }
   }
 }
-```
-
-`using`常常被称为「借贷模式」，是保证资源自动回收的重要机制。
-
-##### 控制抽象
-
-使得`using`形如内置于语言的控制结构，其行为类似于`if, while`一样。
-
-```scala
-def read: String = using(Source.fromFile(source)) { file =>
-  file.getLines.mkString(Properties.lineSeparator) 
-}
-```
-
-##### 鸭子编程
-
-`R <: { def close(): Unit }`用于约束`R`类型的特征，它必须拥有`def close(): Unit`方法。这是`Scala`支持「鸭子编程」的一个重要技术。
-
-例如，`File`满足`R`类型的特征，因为它拥有`close`方法。
-
-##### 惰性求值
-
-`resource: => R`是按照`by-name`传递，在实参传递形参过程中，并未对实参进行立即求值，而将求值推延至`resource: => R`的调用点。
-
-例如，`using(Source.fromFile(source))`并没有马上调用`fromFile`方法，并传递给形参，而将求值推延至`source = Some(resource)`语句，即调用`Some.apply`方法时才展开计算。
-
-##### Option
-
-在`Scala`社区，`Option`常常用于表示「存在与不存在」两者之间的语义。它存在两种形式：`Some, None`。
-
-##### for推导式
-
-在`finally`关闭资源时，使用`for`推导式过滤掉`None`。也就是说，如下三种形式是等价的。
-
-- 过滤掉`None`，并自动提取`Option`中的元素。
-
-```scala
-for (s <- source)
-  s.close
-```
-
-- 使用`if`，但需要从`Some`中手动`get`。
-
-```scala
-if (source != None)
-  source.get.close
 ```
 
 ## Scala的明天
