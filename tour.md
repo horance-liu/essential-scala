@@ -1,4 +1,4 @@
-# Scala破冰之旅
+# 破冰之旅
 
 > 即使水墨丹青，何以绘出半妆佳人。
 
@@ -78,7 +78,7 @@ it ("times(3) -> fizz" ) {
 
 ##### 如果使用Java
 
-为了快速通过测试，可以做简单实现。如果使用`Java`，`Times`实现大致如下。
+为了快速通过测试，可以做简单实现。如果使用`Java`，`Times`可以如下实现。
 
 ```java
 public class Times {
@@ -98,7 +98,7 @@ public class Times {
 
 ##### 构造参数
 
-从上述`Java`实现可以看出，当定义一个私有字段时，需要在构造函数对它进行初始化。类似重复的「样板代码」在`Scala`中，可以在「主构造函数」中使用「构造参数」代替，彻底消除重复代码。
+从上述`Java`实现可以看出，当定义一个私有字段时，需要在构造函数对它进行初始化。类似重复的「样板代码」在`Scala`中，可以在「主构造函数」中使用「构造参数」定义字段，彻底消除重复设计。
 
 ```scala
 class Times(n: Int, word: String) {
@@ -119,26 +119,16 @@ def apply(m: Int): String = word
 
 ##### 类型推演
 
-关于`Scala`类型推演，需要注意几点：
-
-- 函数原型后面不能略去`=`
-
-`apply`函数原型后面的`=`不能略去；否则会限制函数的类型推演的能力，编译器将一律推演函数返回值类型为`Unit`(等价于`Java`中的`void`)。
-
-- 函数返回值常常略去`return`
-
-例如，`def apply(m: Int) = { return word }`将产生编译错误，其需要明确地声明函数返回值的类型。所以，显式的`return`语句的使用得不偿失，除非`return`用于明确的提前中断。
-
-- 借助于类型推演的机制，变量、函数返回值的类型都可以略去；但是，当逻辑较为复杂时，代码的表达力将大打折扣
+定义变量时，可以通过初始化值的类型推演出变量类型。
 
 ```scala
-val i: Int = 0  // 类型修饰显得冗余
+val i = 0  // 等价于 val i: Int = 0
 ```
 
-事实上，此处也可以略去`apply`方法返回值的类型修饰，它依然能够推演为`String`类型。
+事实上，当函数体比较短小时，可以一眼看出函数返回值类型，也可以略去函数返回值的类型。例如`Times.apply`的返回值类型推演为`String`类型。
 
 ```scala
-def apply(m: Int) = word
+def apply(m: Int) = word  // 等价于 def apply(m: Int): String = word
 ```
 
 ##### apply方法
@@ -193,9 +183,9 @@ final abstract class Int private extends AnyVal {
 
 因为两者功能重复，因此`Scala`并没有提供三元表达式的特性。
 
-### 使用样本类
+##### 使用case类
 
-可以将`Times`设计为「样本类」。
+可以将`Times`设计为`case`类。
 
 ```scala
 case class Times(n: Int, word: String) {
@@ -209,86 +199,6 @@ case class Times(n: Int, word: String) {
 ```scala
 it ("times(3) -> fizz" ) {
   Times(3, "Fizz")(3 * 2) should be("Fizz")
-}
-```
-
-##### 揭秘样本类
-
-使用`case class`定义的类称为「样本类」，它默认具有字段的`Getter`方法，并天然地拥有`equals, hashCode`等方法。
-
-另外，「样本类」在其「伴生对象」中自动生成`apply`的工厂方法。当生产对象时，可以略去`new`关键字，使得语义更加简洁。
-
-也就是说，`case class Times...`等价于：
-
-```scala
-class Times(val n: Int, val word: String) {
-  def apply(m: Int): String =
-    if (m % n == 0) word else ""
-
-  override def equals(obj: Any): Boolean = ???
-  override def hashCode(): Int = ???
-  ...
-}
-
-object Times {
-  def apply(n: Int, word: String) = new Times(n, word)
-}
-```
-
-> 在使用`TDD`时，可以使用`???`快速通过编译。在本书中，为了缩减篇幅，也常用`???`表示函数实现的占位表示。
-> 
-> 其中，`???`定义在`Predef`中；因为`Predef`被编译器默认导入，其包含的成员对所有程序公开。
-> 
-> ```scala
-> def ??? = throw new NotImplementedError
-> ```
-
-##### 伴生对象
-
-`object Times`常常称为`class Times`的「伴生对象」。事实上，「伴生对象」中的方法，类似于`Java`中的`static`方法。但`Scala`摒弃了`static`的关键字，将面向对象的语义进行统一。
-
-如果用`Java`设计`case class Times`，其实现类似于：
-
-```java
-public class Times {
-  private final int n;
-  private final String word;
-
-  public Times(int n, String word) {
-    this.n = n;
-    this.word = word;
-  }
-  
-  public apply(int m) {
-    return word;
-  }
-  
-  // Getter方法
-  public int n() {
-    return n;
-  }
-  
-  public String word() {
-    return word;
-  }
-  
-  // 自动生成equals, hashCode方法  
-  @Override
-  public boolean equals(Object obj) {
-    ...
-  }
-  
-  @Override
-  public int hashCode() {
-    ...
-  }
-  
-  // 静态工厂方法
-  public static Times apply(int n, String word) {
-    return new Times(n, word);
-  }
-  
-  ...
 }
 ```
 
@@ -317,7 +227,7 @@ case class Contains(n: Int, word: String) {
 
 `m.toString`等价于`m.toString()`。按照惯例，如果函数没有副作用，则可以略去小括号；相反，如果产生副作用，则显式地加上小括号用于警示。
 
-如果函数定义时就没有使用小括号，用于表达函数无副作用；此时用户不能画蛇添足，添加多余的小括号；否则与函数定义的语义相驳了。
+如果函数定义时就没有使用小括号，用于表达函数无副作用；此时用户不能画蛇添足，添加多余的小括号，否则与函数定义的语义相驳了。
 
 ### 实现默认规则
 
@@ -373,9 +283,7 @@ trait Rule {
 }
 ```
 
-##### 特质的功效
-
-此处使用`trait`定义了一个接口。事实上，`trait`不仅仅等价于`Java`的`interface`，它是`Scala`实现对象组合的重要机制。
+事实上，`trait`不仅仅等价于`Java`中的`interface`，它是`Scala`实现对象组合的重要机制。
 
 ##### 实现特质
 
@@ -524,7 +432,7 @@ case class AnyOf(rules: Rule*) extends Rule {
 }
 ```
 
-##### 快速实现AnyOf
+##### 链式调用
 
 鉴于`AnyOf`的基础，可以快速地实现`AnyOf`。
 
@@ -643,7 +551,7 @@ object Rule {
 }
 ```
 
-恭喜，通过所有测试。此时可以安全地删除`Times, Contains, Default, AnyOf, AllOf`，`Rule`特质，以及相关的遗留的测试用例了。
+恭喜，通过所有测试。此时可以安全地删除`Times, Contains, Default, AnyOf, AllOf`, `trait Rule`，以及相关遗留的测试用例了。
 
 ##### 类型别名
 
@@ -691,10 +599,10 @@ def default: Rule =
 因此，三者实现可归结为一种统一的抽象行为:
 
 ```scala
-m => if (matcher) action(m) else ""
+n => if (matcher) action(n) else ""
 ```
 
-### 提取匹配器
+### 匹配器：`Matcher`
 
 先提取抽象的「匹配器」概念：`Matcher`。事实上，`Matcher`是一个「一元函数」，入参为`Int`，返回值为`Boolean`，是一种典型的「谓词」。
 
@@ -870,22 +778,23 @@ val r2 = anyof(
 val r2 = comb(r_n1, r_n2, r_n3)
 ```
 
-##### 实现comb
+##### 本地方法
 
 当一个私有函数比较短小时，可以实现为「本地方法」，这样即可保证函数的职责单一，并取得良好的封装性，同时还可以避免函数间的参数传递。
 
 ```scala
 def comb(rules: Rule*) = {
-  def comb: Seq[Rule] = {
-    (1 to rules.size).reverse
-      .flatMap(rules.combinations(_))
-      .map(allof(_: _*))
-  }
-  anyof(comb: _*)
+  def subsets: Seq[Rule] =
+    rules.toSet.subsets.toList.reverse.map { subset =>
+       allof(subset.toList: _*)
+    }
+  anyof(subsets: _*)
 }
 ```
 
-其中，`1 to rules.size`构造了一个`Rang`，并通过调用`reverse`，取得其「逆序」；通过调用`flatMap`可以得到`rules`的真子集，其中`rules.combinations(n)`可以得到「长度为`n`的子集」；然后针对于每个子集合`{R1, R2, ..., Rn}`，通过`map`变换为`allof(R1, R2, ..., Rn)`。
+其中，`Set.subsets`求取集合的所有子集，然后调用`toList`转换为`List`，并通过`reverse`取得其「逆序」。
+
+然后针对于每个子集合`subset: {R1, R2, ..., Rn}`，通过`map`变换为`allof(R1, R2, ..., Rn)`。
 
 ### 完备用例集
 
@@ -945,5 +854,5 @@ anyof: rule1 || rule2 ...
 
 本文通过对`FizzBuzzWhizz`小游戏的设计和实现，首先尝试使用`Scala`的面向对象技术，然后采用函数式的设计；过程采用`TDD`小步快跑，演进式地完成了所有功能。
 
-中间遇到了「特质」，「子类化多态」，「样本类」，「类型别名」，「伴生对象」，「变长参数」，「惰性求值」，「高阶函数」，「柯里化」，「本地方法」等常用的技术。经过这个例子的实践，相信大家对`Scala`有了一个大体的印象和感觉，接下来让我们开启`Scala`的星际之旅吧。
+中间遇到了「特质」，「子类化多态」，「case类」，「类型别名」，「伴生对象」，「变长参数」，「惰性求值」，「高阶函数」，「柯里化」，「本地方法」等常用的技术。经过这个例子的实践，相信大家对`Scala`有了一个大体的印象和感觉，接下来让我们开启`Scala`的星际之旅吧。
 

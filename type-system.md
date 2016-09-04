@@ -1,4 +1,4 @@
-# Scala类型推演
+# 类型系统
 
 > 一纸，一笔，一人记录；一字，一句，千种情怀。
 
@@ -110,54 +110,4 @@ def join(strings: String*): String = strings.mkString("-")def join(strings: Lis
 val result = if(!opt.isEmpty) opt.get else 
     throw new RuntimeException("empty")
 ```
-
-### 分号可选
-
-使用`Scala`编程，当语句结束时，分号是可选。相对于强制「使用分号」或者「拒绝分号」，「分号可选」的方案具有很大的灵活性。
-
-`forall`是一个很简单的泛型算法，它接受一个类型为`GenTraversableOnce[A]`的集合`c`，及其一个谓词`p`，用于判定集合中所有元素是否都满足于该谓词。
-
-```scala
-import scala.collection.GenTraversableOnce
-import scala.util.control.Breaks._
-
-def forall[A](c: GenTraversableOnce[A], p: A => Boolean): Boolean = {
-  var result = true
-  breakable {
-    for (x <- c)
-      if (!p(x)) { result = false; break }
-  }
-  result
-}
-```
-
-一方面，当编译器能够准确地判定语句的结尾，略去分号可以使得代码更加简洁；否则，程序将冗余了过多的语法噪声。
-
-```scala
-def forall[A](c: GenTraversableOnce[A], p: A => Boolean): Boolean = {
-  var result = true;  // 冗余
-  ...
-  result;
-}
-```
-
-另一方面，如果两个语句关系紧密，将它们放在同一行，并用分号隔离，将使得代码更加紧凑；否则，程序相对就较为复杂、冗长。
-
-```scala
-if (!p(x)) { 
-  result = false
-  break
-}
-```
-
-### 面向表达式
-
-### 控制结构
-
-### 构造参数
-
-### 特质
-
-### 
-
 
